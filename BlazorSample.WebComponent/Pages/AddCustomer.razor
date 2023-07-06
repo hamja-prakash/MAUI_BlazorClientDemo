@@ -1,0 +1,143 @@
+﻿@page "/addcustomer"
+@page "/editcustomer/{customerid:int}"
+
+<PageTitle>Add Customer</PageTitle>
+
+@using BlazorSample.WebComponent.Models;
+@using BlazorSample.WebComponent.Services;
+@inject UserService _userService
+@inject NavigationManager NavManager
+
+<h2>Add Customer</h2>
+<hr />
+
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success mt-2">
+        @SuccessMessage
+    </div>
+}
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger mt-2">
+        @ErrorMessage
+    </div>
+}
+
+<div class="p-2">
+    <EditForm Model="@customerData" OnValidSubmit="SaveCustomerData">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-group  mb-3">
+                    <label for="Name" class="control-label">First Name</label>
+                    <input form="Name" class="form-control" @bind=@customerData.FirstName type="text" placeholder="Enter First Name" required />
+                    <ValidationMessage For="@(() => customerData.FirstName)" />
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="Address" class="control-label">Last Name</label>
+                    <input form="Address" class="form-control" @bind=@customerData.LastName type="text" placeholder="Enter Last Name" required />
+                    <ValidationMessage For="@(() => customerData.LastName)" />
+                </div>
+                <div class="form-group mb-3">
+                    <label for="EmailId" class="control-label">Email</label>
+                    <input form="EmailId" class="form-control" @bind=@customerData.EmailId type="text" placeholder="Enter Email" required />
+                    <ValidationMessage For="@(() => customerData.EmailId)" />
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="Phonenumber" class="control-label">Phone Number</label>
+                    <input form="Phonenumber" class="form-control" @bind=@customerData.Phonenumber type="text" placeholder="Enter Phone Number" />
+                    <ValidationMessage For="@(() => customerData.Phonenumber)" />
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="City" class="control-label">City</label>
+                    <input form="City" class="form-control" @bind=@customerData.City type="text" placeholder="Enter City" maxlength="10"  />
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="zipcode" class="control-label">Zip Code</label>
+                    <input form="zipcode" class="form-control" @bind=@customerData.ZipCode type="text" placeholder="Enter Zip Code" required />
+                    <ValidationMessage For="@(() => customerData.ZipCode)" />
+                </div>
+                <div class="form-group mb-3 ">
+                    <label for="State" class="control-label">State</label>
+                    <input form="State" class="form-control" @bind=@customerData.State type="text" placeholder="Enter State" maxlength="10"  />
+                </div>
+                <div class="form-group">
+                    <label for="Country" class="control-label">Country</label>
+                    <input form="Country" class="form-control" @bind=@customerData.Country type="text" placeholder="Enter Country"  />
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-success" type="submit">Save</button>
+        <a class="btn" href="/Customers">Go to Customers</a>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int customerid { get; set; }
+    private string SuccessMessage = string.Empty;
+    private string ErrorMessage = string.Empty;
+    TBLUser customerData = new TBLUser();
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (customerid > 0)
+            {
+                await GetUserDataById(customerid);
+                this.StateHasChanged();
+            }
+        }      
+    }
+
+    private async Task GetUserDataById(int customerid)
+    {
+        try
+        {
+            customerData = await _userService.GetUserDataById(customerid);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Sorry, an unexpected error has occurred. Please try again.";
+            throw ex;
+        }
+    }
+
+    private async void SaveCustomerData()
+    {
+        try
+        {
+            var result = false;
+            if (customerid > 0)
+            {
+                result = await _userService.UpdateCustomer(customerData);
+                if (result)
+                {
+                    customerData = new TBLUser();
+                    SuccessMessage = "Customer data has been updated successfully!";
+                    StateHasChanged();
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    NavManager.NavigateTo("/Customers");
+                    StateHasChanged();
+                }
+                return;
+            }
+            result = await _userService.AddCustomers(customerData);
+            if (result)
+            {
+                customerData = new TBLUser();
+                SuccessMessage = "Customer data has been saved successfully!";
+                StateHasChanged();
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                SuccessMessage = "";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Sorry, an unexpected error has occurred. Please try again.";
+            throw ex;
+        }
+    }
+}
